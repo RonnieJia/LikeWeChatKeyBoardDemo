@@ -425,6 +425,10 @@
         [self.currentCtr presentViewController:picker animated:YES completion:nil];
     }
 }
+- (void)playVoice {
+    [self.voiceView playVoice];
+}
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillChangeFrameNotification object:nil];

@@ -7,22 +7,67 @@
 //
 
 #import "VoiceView.h"
-#import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
 
 @interface VoiceView ()<AVAudioRecorderDelegate>
-@property (nonatomic, strong)AVAudioRecorder *recorder;
-@property (nonatomic, strong)NSTimer *timer;
+
+{
+    //录音器
+    AVAudioRecorder *recorder;
+    //播放器
+    AVAudioPlayer *player;
+    NSDictionary *recorderSettingsDict;
+    
+    //定时器
+    NSTimer *timer;
+    //图片组
+    NSMutableArray *volumImages;
+    double lowPassResults;
+    
+    //录音名字
+    NSString *playName;
+
+}
 @end
 
 @implementation VoiceView
 
 - (instancetype)initWithFrame:(CGRect)frame {
     if (self == [super initWithFrame:frame]) {
+        [self setupSession];
         [self setupButton];
-        [self audio];
     }
     return self;
+}
+
+- (void)setupSession {
+    if ([[[UIDevice currentDevice] systemVersion] compare:@"7.0"] != NSOrderedAscending)
+    {
+        //7.0第一次运行会提示，是否允许使用麦克风
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        NSError *sessionError;
+        //AVAudioSessionCategoryPlayAndRecord用于录音和播放
+        [session setCategory:AVAudioSessionCategoryPlayAndRecord error:&sessionError];
+        if(session == nil)
+            NSLog(@"Error creating session: %@", [sessionError description]);
+        else
+            [session setActive:YES error:nil];
+    }
+    
+    
+    NSString *docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    playName = [NSString stringWithFormat:@"%@/play.aac",docDir];
+    self.voiceUrl = playName;
+    //录音设置
+    recorderSettingsDict =[[NSDictionary alloc] initWithObjectsAndKeys:
+                           [NSNumber numberWithInt:kAudioFormatMPEG4AAC],AVFormatIDKey,
+                           [NSNumber numberWithInt:1000.0],AVSampleRateKey,
+                           [NSNumber numberWithInt:2],AVNumberOfChannelsKey,
+                           [NSNumber numberWithInt:8],AVLinearPCMBitDepthKey,
+                           [NSNumber numberWithBool:NO],AVLinearPCMIsBigEndianKey,
+                           [NSNumber numberWithBool:NO],AVLinearPCMIsFloatKey,
+                           nil];
+    
 }
 
 - (void)setupButton {
@@ -49,41 +94,67 @@
 {
     
     //创建录音文件，准备录音
-    
-    if ([self.recorder prepareToRecord]) {
+    if ([self canRecord]) {
         
-        //开始录制
-        NSLog(@"kaishi");
-        [self.recorder record];
+        NSError *error = nil;
+        //必须真机上测试,模拟器上可能会崩溃
+        recorder = [[AVAudioRecorder alloc] initWithURL:[NSURL URLWithString:playName] settings:recorderSettingsDict error:&error];
         
+        if (recorder) {
+            recorder.meteringEnabled = YES;
+            if ([recorder prepareToRecord]) {
+            [recorder record];
+            }
+            
+            //启动定时器
+            timer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(levelTimer:) userInfo:nil repeats:YES];
+            
+        } else {
+            int errorCode = CFSwapInt32HostToBig ([error code]);
+            NSLog(@"Error: %@ [%4.4s])" , [error localizedDescription], (char*)&errorCode);
+            
+        }
     }
+
     
-    //设置NSTimer定时检测，刷新音量数据
-    
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:0 target:self selector:@selector(detectionVoice) userInfo:nil repeats:YES];
-    
+}
+
+- (void)playVoice {
+    NSError *playerError;
+    player = [[AVAudioPlayer alloc] initWithContentsOfURL:[NSURL URLWithString:playName] error:&playerError];
+    if (player == nil)
+    {
+        NSLog(@"ERror creating player: %@", [playerError description]);
+    }else{
+        [player play];
+    }
+    //服务器上传文件
 }
 
 - (void)btnUp:(id)sender
 
 {
-    if (self.recorder.currentTime > 2) {//如果录制时间<2s 不发送
+    if (recorder.currentTime > 2) {//如果录制时间<2s 不发送
         
-        NSLog(@"wancehng111");
-        [self.recorder deleteRecording];
+        //松开 结束录音
         
+        //播放
+        
+        //图片重置
+
     }else {
         NSLog(@"wancehng");
 
         //说话事件太短，要删除记录的文件
         
-        [self.recorder deleteRecording];
+        [recorder deleteRecording];
         
     }
     
-    [self.recorder stop];
-    
-    [self.timer invalidate];
+    [recorder stop];
+    recorder = nil;
+    [timer invalidate];
+    timer = nil;
     
 }
 
@@ -94,70 +165,74 @@
     //删除录制文件
     NSLog(@"cancel");
 
-    [self.recorder deleteRecording];
+    [recorder deleteRecording];
     
-    [self.recorder stop];
+    [recorder stop];
     
-    [self.timer invalidate];
+    [timer invalidate];
     
 }
 
-- (void)detectionVoice
-
+-(void)levelTimer:(NSTimer*)timer_
 {
-    [self.recorder updateMeters];//刷新音量数据
+    //call to refresh meter values刷新平均和峰值功率,此计数是以对数刻度计量的,-160表示完全安静，0表示最大输入值
+    [recorder updateMeters];
+    const double ALPHA = 0.05;
+    double peakPowerForChannel = pow(10, (0.05 * [recorder peakPowerForChannel:0]));
+    lowPassResults = ALPHA * peakPowerForChannel + (1.0 - ALPHA) * lowPassResults;
+    
+    NSLog(@"Average input: %f Peak input: %f Low pass results: %f", [recorder averagePowerForChannel:0], [recorder peakPowerForChannel:0], lowPassResults);
+    /*
+    if (lowPassResults>=0.8) {
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:7]];
+    }else if(lowPassResults>=0.7){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:6]];
+    }else if(lowPassResults>=0.6){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:5]];
+    }else if(lowPassResults>=0.5){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:4]];
+    }else if(lowPassResults>=0.4){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:3]];
+    }else if(lowPassResults>=0.3){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:2]];
+    }else if(lowPassResults>=0.2){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:1]];
+    }else if(lowPassResults>=0.1){
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:0]];
+    }else{
+        soundLodingImageView.image = [UIImage imageNamed:[volumImages objectAtIndex:0]];
+    }
+    */
 }
 
-- (void)audio {
-    //录音设置
+
+//判断是否允许使用麦克风7.0新增的方法requestRecordPermission
+-(BOOL)canRecord
+{
+    __block BOOL bCanRecord = YES;
+    if ([[[UIDevice currentDevice] systemVersion] compare:@"7.0"] != NSOrderedAscending)
+    {
+        AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+        if ([audioSession respondsToSelector:@selector(requestRecordPermission:)]) {
+            [audioSession performSelector:@selector(requestRecordPermission:) withObject:^(BOOL granted) {
+                if (granted) {
+                    bCanRecord = YES;
+                }
+                else {
+                    bCanRecord = NO;
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [[[UIAlertView alloc] initWithTitle:nil
+                                                    message:@"app需要访问您的麦克风。\n请启用麦克风-设置/隐私/麦克风"
+                                                   delegate:nil
+                                          cancelButtonTitle:@"关闭"
+                                          otherButtonTitles:nil] show];
+                    });
+                }
+            }];
+        }
+    }
     
-    NSMutableDictionary *recordSetting = [[NSMutableDictionary alloc]init];
-    
-    //设置录音格式  AVFormatIDKey==kAudioFormatLinearPCM
-    
-    [recordSetting setValue:[NSNumber numberWithInt:kAudioFormatLinearPCM] forKey:AVFormatIDKey];
-    
-    //设置录音采样率(Hz) 如：AVSampleRateKey==8000/44100/96000（影响音频的质量）
-    
-    [recordSetting setValue:[NSNumber numberWithFloat:96000] forKey:AVSampleRateKey];
-    
-    //录音通道数  1 或 2
-    
-    [recordSetting setValue:[NSNumber numberWithInt:1] forKey:AVNumberOfChannelsKey];
-    
-    //线性采样位数  8、16、24、32
-    
-    [recordSetting setValue:[NSNumber numberWithInt:16] forKey:AVLinearPCMBitDepthKey];
-    
-    //录音的质量
-    
-    [recordSetting setValue:[NSNumber numberWithInt:AVAudioQualityHigh] forKey:AVEncoderAudioQualityKey];
-    
-    NSString *strUrl = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
-    
-    NSURL *url = [NSURL fileURLWithPath:[NSString stringWithFormat:@"%@/voice.caf", strUrl]];
-    
-    //语音录制完成后存放在本地，我们将该本地路径赋值给我们全局定义好的NSURL类型的voiceUrl
-    
-    self.voiceUrl = url;
-    
-    NSError *error;
-    
-    //初始化
-    
-    self.recorder = [[AVAudioRecorder alloc]initWithURL:url settings:recordSetting error:&error];
-    
-    //开启音量检测
-    
-    self.recorder.meteringEnabled = YES;
-    
-    self.recorder.delegate = self;
-    
-    AVAudioSession *session = [AVAudioSession sharedInstance];
-    
-    [session setCategory:AVAudioSessionCategoryPlayAndRecord error:&error];
-    
-    [session setActive:YES error:&error];
+    return bCanRecord;
 }
 
 @end

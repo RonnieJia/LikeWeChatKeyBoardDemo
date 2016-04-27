@@ -50,13 +50,7 @@
 }
 
 - (void)btnclick {
-    NSLog(@"%@",self.voice.voiceUrl);
-    NSData *data = [NSData dataWithContentsOfURL:self.voice.voiceUrl];
-    NSLog(@"%@",data);
-    AVAudioPlayer *player = [[AVAudioPlayer alloc]initWithContentsOfURL:self.voice.voiceUrl error:nil];
-    
-    [player play];
-    //服务器上传文件
+    [self.keyBoard playVoice];
 }
 
 - (void)tap {

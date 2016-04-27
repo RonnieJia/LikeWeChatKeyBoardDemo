@@ -65,6 +65,7 @@
 		087438FA1CD04FB30037BD20 /* RJMoreView.m in Sources */ = {isa = PBXBuildFile; fileRef = 087438F91CD04FB30037BD20 /* RJMoreView.m */; };
 		087438FD1CD0500A0037BD20 /* RJKeyBoard.m in Sources */ = {isa = PBXBuildFile; fileRef = 087438FC1CD0500A0037BD20 /* RJKeyBoard.m */; };
 		087439001CD091D30037BD20 /* VoiceView.m in Sources */ = {isa = PBXBuildFile; fileRef = 087438FF1CD091D30037BD20 /* VoiceView.m */; };
+		A168D45E1CD0F41900262285 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A168D45D1CD0F41900262285 /* AVFoundation.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -137,6 +138,7 @@
 		087438FC1CD0500A0037BD20 /* RJKeyBoard.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RJKeyBoard.m; sourceTree = "<group>"; };
 		087438FE1CD091D30037BD20 /* VoiceView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoiceView.h; sourceTree = "<group>"; };
 		087438FF1CD091D30037BD20 /* VoiceView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VoiceView.m; sourceTree = "<group>"; };
+		A168D45D1CD0F41900262285 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A168D45E1CD0F41900262285 /* AVFoundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +156,7 @@
 		087438651CD04D050037BD20 = {
 			isa = PBXGroup;
 			children = (
+				A168D45D1CD0F41900262285 /* AVFoundation.framework */,
 				087438701CD04D050037BD20 /* RJKeyBoard */,
 				0874386F1CD04D050037BD20 /* Products */,
 			);
@@ -336,6 +340,7 @@
 				TargetAttributes = {
 					0874386D1CD04D050037BD20 = {
 						CreatedOnToolsVersion = 7.3;
+						DevelopmentTeam = EWP3N5SPXA;
 					};
 				};
 			};
@@ -541,10 +546,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = RJKeyBoard/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = RJ.RJKeyBoard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -552,10 +560,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = RJKeyBoard/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = RJ.RJKeyBoard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
@@ -578,6 +589,7 @@
 				087438871CD04D050037BD20 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

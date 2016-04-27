@@ -9,5 +9,6 @@
 #import <UIKit/UIKit.h>
 
 @interface VoiceView : UIView
-@property (nonatomic, strong)NSURL *voiceUrl;
+- (void)playVoice;
+@property (nonatomic, strong)NSString *voiceUrl;
 @end

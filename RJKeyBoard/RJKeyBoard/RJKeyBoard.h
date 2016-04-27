@@ -28,4 +28,5 @@
 @property (nonatomic,strong)UIViewController *currentCtr;
 
 - (void)resignFirstRespoder;
+- (void)playVoice;
 @end
